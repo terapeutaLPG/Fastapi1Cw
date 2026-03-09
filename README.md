@@ -841,3 +841,20 @@ Kolejne laboratorium (1.3) — programowanie asynchroniczne, WebSocket, testy je
 ---
 
 FastAPI · SQLAlchemy · JWT · RBAC
+
+
+
+
+
+
+
+
+{
+  "username": "testuser",
+  "email": "test@test.com",
+  "password": "haslo1234"
+}
+
+
+
+pole grant_type musi byc puste i te inne tez ze usuwam i potem klikam w empty czy cos takiego 
