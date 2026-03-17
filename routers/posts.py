@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models.post import Post
+from models.tag import Tag
 from schemas.post import PostCreate, PostOut
 from auth.deps import get_current_user, require_user
 from models.user import User
@@ -33,12 +34,21 @@ def create_post(
     db:           Session = Depends(get_db),
     current_user: User    = Depends(require_user),
 ):
+    tags = []
+    if data.tag_ids:
+        unique_tag_ids = list(dict.fromkeys(data.tag_ids))
+        tags = db.query(Tag).filter(Tag.id.in_(unique_tag_ids)).all()
+        if len(tags) != len(unique_tag_ids):
+            raise HTTPException(status_code=404, detail="Jeden lub więcej tagów nie istnieje")
+
     post = Post(
         title=data.title,
         content=data.content,
         published=data.published,
         author_id=current_user.id,
     )
+    post.tags = tags
+
     db.add(post)
     db.commit()
     db.refresh(post)
