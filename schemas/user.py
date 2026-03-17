@@ -19,8 +19,9 @@ class PasswordChange(BaseModel):
 
 class UserMeUpdate(BaseModel):
     username: str | None = Field(
-    default=None,
-    min_length=3,
-    max_length=50,
-    pattern=r"^[a-zA-Z0-9_]+$")
-email: EmailStr | None = None
+        default=None,
+        min_length=3,
+        max_length=50,
+        pattern=r"^[a-zA-Z0-9_]+$",
+    )
+    email: EmailStr | None = None
