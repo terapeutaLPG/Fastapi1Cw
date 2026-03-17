@@ -16,3 +16,11 @@ class UserOut(BaseModel):
 class PasswordChange(BaseModel):
     current_password: str
     new_password:     str = Field(min_length=8)
+
+class UserMeUpdate(BaseModel):
+    username: str | None = Field(
+    default=None,
+    min_length=3,
+    max_length=50,
+    pattern=r"^[a-zA-Z0-9_]+$")
+email: EmailStr | None = None
