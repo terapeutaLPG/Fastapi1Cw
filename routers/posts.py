@@ -14,6 +14,7 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 def list_posts(
     db:        Session  = Depends(get_db),
     published: bool | None = Query(None),
+    tag:       str  | None = Query(None),
     search:    str  | None = Query(None),
     page:      int         = Query(1, ge=1),
     per_page:  int         = Query(20, ge=1, le=100),
@@ -21,6 +22,8 @@ def list_posts(
     query = db.query(Post)
     if published is not None:
         query = query.filter(Post.published == published)
+    if tag:
+        query = query.join(Post.tags).filter(Tag.name.ilike(tag)).distinct()
     if search:
         pattern = f"%{search}%"
         query = query.filter(Post.title.ilike(pattern) | Post.content.ilike(pattern))
