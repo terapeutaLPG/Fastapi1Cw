@@ -2,6 +2,7 @@ import time
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from database import engine, Base
 from models import comment, post, tag, task, user
@@ -42,3 +43,5 @@ app.include_router(comments.router)
 app.include_router(tags.router)
 app.include_router(tasks.router)
 app.include_router(calculator.router)
+
+app.mount("/", StaticFiles(directory="static", html=True), name="static")

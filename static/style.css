@@ -1,0 +1,47 @@
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background: #ffffff;
+  color: #000000;
+}
+
+main {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+a {
+  color: #000000;
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+  padding: 6px;
+  margin: 2px 0;
+  border: 1px solid #000000;
+  background: #ffffff;
+  color: #000000;
+}
+
+button {
+  cursor: pointer;
+}
+
+ul {
+  padding-left: 20px;
+}
+
+li {
+  margin-bottom: 12px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <p><a href="/">Powrót</a></p>
+    <h1>Kalkulator</h1>
+
+    <div class="row">
+      <input type="number" id="numA" step="any" placeholder="Liczba A">
+      <select id="operator">
+        <option value="add">+</option>
+        <option value="subtract">-</option>
+        <option value="multiply">*</option>
+        <option value="divide">/</option>
+      </select>
+      <input type="number" id="numB" step="any" placeholder="Liczba B">
+      <button id="calcButton" type="button">Oblicz</button>
+    </div>
+
+    <p id="calcResult"></p>
+  </main>
+
+  <script src="/calc.js"></script>
+</body>
+</html>

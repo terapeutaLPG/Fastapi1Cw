@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TODO / notatki</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <p><a href="/">Powrót</a></p>
+    <h1>TODO / notatki</h1>
+
+    <form id="taskForm">
+      <p>
+        <label for="title">Tytuł</label><br>
+        <input type="text" id="title" maxlength="200" required>
+      </p>
+      <p>
+        <label for="description">Opis</label><br>
+        <textarea id="description" rows="4" maxlength="2000"></textarea>
+      </p>
+      <p>
+        <button type="submit">Dodaj</button>
+        <button type="button" id="filterButton">Pokaż tylko niezrobione</button>
+      </p>
+    </form>
+
+    <p id="message"></p>
+    <ul id="taskList"></ul>
+  </main>
+
+  <script src="/todo.js"></script>
+</body>
+</html>
