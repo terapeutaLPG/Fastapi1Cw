@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TODO - logowanie</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 520px; }
+    h1 { margin-bottom: 0.25rem; }
+    p.top { margin-top: 0; color: #555; }
+    form { display: grid; gap: 0.65rem; margin-top: 1rem; }
+    input { padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px; }
+    button { width: fit-content; padding: 0.55rem 0.85rem; cursor: pointer; }
+    #feedback { margin-top: 0.8rem; min-height: 1.2rem; }
+    .error { color: #b00020; }
+    .ok { color: #0b6b2f; }
+  </style>
+</head>
+<body>
+  <h1>TODO - logowanie</h1>
+  <p class="top">Zaloguj sie, aby zarzadzac swoimi zadaniami.</p>
+  <p><a href="/">Powrot do nawigacji</a></p>
+
+  <form id="login-form">
+    <label for="username">Login (username)</label>
+    <input id="username" name="username" required autocomplete="username">
+
+    <label for="password">Haslo</label>
+    <input id="password" name="password" type="password" required autocomplete="current-password">
+
+    <button type="submit">Zaloguj</button>
+  </form>
+
+  <p id="feedback"></p>
+
+  <script>
+    const form = document.getElementById("login-form");
+    const feedback = document.getElementById("feedback");
+
+    function showMessage(text, type = "ok") {
+      feedback.textContent = text;
+      feedback.className = type;
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      showMessage("");
+
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+      const body = new URLSearchParams({ username, password });
+
+      try {
+        const res = await fetch("/auth/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body,
+        });
+
+        if (!res.ok) {
+          let detail = "Niepoprawne dane logowania.";
+          try {
+            const err = await res.json();
+            if (err && err.detail) detail = String(err.detail);
+          } catch (_) {}
+          throw new Error(detail);
+        }
+
+        const data = await res.json();
+        sessionStorage.setItem("access_token", data.access_token);
+        if (data.refresh_token) {
+          sessionStorage.setItem("refresh_token", data.refresh_token);
+        }
+        showMessage("Logowanie udane. Przekierowuje...", "ok");
+        window.location.href = "/todo";
+      } catch (err) {
+        showMessage(err.message, "error");
+      }
+    });
+  </script>
+</body>
+</html>

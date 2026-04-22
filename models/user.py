@@ -12,3 +12,4 @@ class User(Base):
     role            = Column(String(20), default="user")
 
     posts = relationship("Post", back_populates="author", cascade="all, delete-orphan")
+    tasks = relationship("Task", back_populates="owner")

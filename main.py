@@ -3,12 +3,27 @@ import time
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import inspect, text
 
 from database import engine, Base
 from models import comment, note, post, tag, task, user
 from routers import auth, calculator, comments, notes, posts, tags, tasks, users
 from exceptions import register_exception_handlers
 
+def ensure_tasks_owner_column() -> None:
+    inspector = inspect(engine)
+    if "tasks" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("tasks")}
+    if "owner_id" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE tasks ADD COLUMN owner_id INTEGER"))
+        connection.execute(text("CREATE INDEX IF NOT EXISTS ix_tasks_owner_id ON tasks (owner_id)"))
+
+ensure_tasks_owner_column()
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -47,6 +62,14 @@ def home(request: Request):
 @app.get("/notes")
 def notes_page(request: Request):
     return templates.TemplateResponse("notes.html", {"request": request})
+
+@app.get("/todo/login")
+def todo_login_page(request: Request):
+    return templates.TemplateResponse("todo_login.html", {"request": request})
+
+@app.get("/todo")
+def todo_page(request: Request):
+    return templates.TemplateResponse("todo_app.html", {"request": request})
 
 app.include_router(auth.router)
 app.include_router(users.router)
