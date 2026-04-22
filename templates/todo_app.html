@@ -113,9 +113,17 @@
   </div>
 
   <script>
-    const token = sessionStorage.getItem("access_token");
-    if (!token) {
-      window.location.href = "/todo/login";
+    function getAccessToken() {
+      return sessionStorage.getItem("access_token");
+    }
+
+    function ensureTokenOrRedirect() {
+      const token = getAccessToken();
+      if (!token) {
+        window.location.href = "/todo/login";
+        return null;
+      }
+      return token;
     }
 
     const state = {
@@ -162,8 +170,11 @@
     }
 
     async function apiFetch(url, options = {}) {
+      const token = ensureTokenOrRedirect();
+      if (!token) return null;
+
       const headers = {
-        Authorization: `Bearer ${sessionStorage.getItem("access_token") || ""}`,
+        Authorization: `Bearer ${token}`,
         ...(options.headers || {}),
       };
       if (options.body && !headers["Content-Type"]) {
@@ -331,60 +342,70 @@
       loadTasks().catch((err) => showMessage(err.message, "error"));
     }
 
-    els.createForm.addEventListener("submit", (e) => {
-      createTask(e).catch((err) => showMessage(err.message, "error"));
-    });
+    function initTodoApp() {
+      if (!ensureTokenOrRedirect()) return;
 
-    els.searchInput.addEventListener("input", () => {
-      state.search = els.searchInput.value;
-      state.page = 1;
-      loadTasks().catch((err) => showMessage(err.message, "error"));
-    });
+      els.createForm.addEventListener("submit", (e) => {
+        createTask(e).catch((err) => showMessage(err.message, "error"));
+      });
 
-    els.perPage.addEventListener("change", () => {
-      state.perPage = Number(els.perPage.value);
-      state.page = 1;
-      loadTasks().catch((err) => showMessage(err.message, "error"));
-    });
-
-    els.toggleUndoneBtn.addEventListener("click", () => {
-      state.doneFilter = state.doneFilter === false ? null : false;
-      state.page = 1;
-      loadTasks().catch((err) => showMessage(err.message, "error"));
-    });
-
-    els.clearFiltersBtn.addEventListener("click", clearFilters);
-
-    els.prevBtn.addEventListener("click", () => {
-      if (state.page > 1) {
-        state.page -= 1;
+      els.searchInput.addEventListener("input", () => {
+        state.search = els.searchInput.value;
+        state.page = 1;
         loadTasks().catch((err) => showMessage(err.message, "error"));
-      }
-    });
+      });
 
-    els.nextBtn.addEventListener("click", () => {
-      const pages = state.pages || 1;
-      if (state.page < pages) {
-        state.page += 1;
+      els.perPage.addEventListener("change", () => {
+        state.perPage = Number(els.perPage.value);
+        state.page = 1;
         loadTasks().catch((err) => showMessage(err.message, "error"));
-      }
-    });
+      });
 
-    els.editForm.addEventListener("submit", (e) => {
-      saveEdit(e).catch((err) => showMessage(err.message, "error"));
-    });
+      els.toggleUndoneBtn.addEventListener("click", () => {
+        state.doneFilter = state.doneFilter === false ? null : false;
+        state.page = 1;
+        loadTasks().catch((err) => showMessage(err.message, "error"));
+      });
 
-    els.cancelEditBtn.addEventListener("click", () => {
-      els.editPanel.style.display = "none";
-    });
+      els.clearFiltersBtn.addEventListener("click", clearFilters);
 
-    els.logoutBtn.addEventListener("click", () => {
-      sessionStorage.removeItem("access_token");
-      sessionStorage.removeItem("refresh_token");
-      window.location.href = "/todo/login";
-    });
+      els.prevBtn.addEventListener("click", () => {
+        if (state.page > 1) {
+          state.page -= 1;
+          loadTasks().catch((err) => showMessage(err.message, "error"));
+        }
+      });
 
-    loadTasks().catch((err) => showMessage(err.message, "error"));
+      els.nextBtn.addEventListener("click", () => {
+        const pages = state.pages || 1;
+        if (state.page < pages) {
+          state.page += 1;
+          loadTasks().catch((err) => showMessage(err.message, "error"));
+        }
+      });
+
+      els.editForm.addEventListener("submit", (e) => {
+        saveEdit(e).catch((err) => showMessage(err.message, "error"));
+      });
+
+      els.cancelEditBtn.addEventListener("click", () => {
+        els.editPanel.style.display = "none";
+      });
+
+      els.logoutBtn.addEventListener("click", () => {
+        sessionStorage.removeItem("access_token");
+        sessionStorage.removeItem("refresh_token");
+        window.location.href = "/todo/login";
+      });
+
+      loadTasks().catch((err) => showMessage(err.message, "error"));
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initTodoApp);
+    } else {
+      initTodoApp();
+    }
   </script>
 </body>
 </html>
