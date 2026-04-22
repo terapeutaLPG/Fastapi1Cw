@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notatki</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; max-width: 900px; }
+    h1 { margin-bottom: 0.25rem; }
+    p.top-nav { margin-top: 0; margin-bottom: 1rem; }
+    form { display: grid; gap: 0.5rem; margin-bottom: 1.5rem; }
+    textarea { min-height: 100px; padding: 0.75rem; resize: vertical; }
+    button { width: fit-content; padding: 0.5rem 0.75rem; cursor: pointer; }
+    ul { list-style: none; padding: 0; display: grid; gap: 0.75rem; }
+    li { border: 1px solid #ddd; border-radius: 8px; padding: 0.75rem; }
+    .meta { font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; }
+    .content { white-space: pre-wrap; margin-bottom: 0.5rem; }
+    .error { color: #b00020; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Lista notatek</h1>
+  <p class="top-nav"><a href="/">Powrot do nawigacji</a></p>
+  <p id="error" class="error"></p>
+
+  <form id="note-form">
+    <label for="content">Treść notatki</label>
+    <textarea id="content" maxlength="2000" required placeholder="Wpisz notatkę..."></textarea>
+    <button type="submit">Dodaj notatkę</button>
+  </form>
+
+  <ul id="notes-list"></ul>
+
+  <script>
+    const notesList = document.getElementById("notes-list");
+    const form = document.getElementById("note-form");
+    const contentInput = document.getElementById("content");
+    const errorBox = document.getElementById("error");
+
+    function setError(message) {
+      errorBox.textContent = message || "";
+    }
+
+    async function loadNotes() {
+      setError("");
+      try {
+        const response = await fetch("/api/notes/");
+        if (!response.ok) {
+          throw new Error(`Nie udalo sie pobrac notatek (${response.status})`);
+        }
+        const notes = await response.json();
+        renderNotes(notes);
+      } catch (error) {
+        setError(error.message);
+      }
+    }
+
+    function renderNotes(notes) {
+      notesList.innerHTML = "";
+      for (const note of notes) {
+        const li = document.createElement("li");
+        const createdAt = new Date(note.created_at).toLocaleString();
+
+        li.innerHTML = `
+          <div class="meta">ID: ${note.id} | Utworzono: ${createdAt}</div>
+          <div class="content"></div>
+          <button type="button">Usun</button>
+        `;
+
+        li.querySelector(".content").textContent = note.content;
+        const deleteButton = li.querySelector("button");
+        deleteButton.addEventListener("click", () => deleteNote(note.id));
+        notesList.appendChild(li);
+      }
+    }
+
+    async function createNote(event) {
+      event.preventDefault();
+      setError("");
+      const content = contentInput.value.trim();
+      if (!content) {
+        setError("Tresc notatki nie moze byc pusta.");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/notes/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        });
+        if (!response.ok) {
+          throw new Error(`Nie udalo sie dodac notatki (${response.status})`);
+        }
+        contentInput.value = "";
+        await loadNotes();
+      } catch (error) {
+        setError(error.message);
+      }
+    }
+
+    async function deleteNote(noteId) {
+      setError("");
+      try {
+        const response = await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
+        if (!response.ok) {
+          throw new Error(`Nie udalo sie usunac notatki (${response.status})`);
+        }
+        await loadNotes();
+      } catch (error) {
+        setError(error.message);
+      }
+    }
+
+    form.addEventListener("submit", createNote);
+    loadNotes();
+  </script>
+</body>
+</html>

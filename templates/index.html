@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FastAPI - Nawigacja projektu</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 960px; line-height: 1.45; }
+    h1 { margin-bottom: 0.25rem; }
+    p.lead { color: #555; margin-top: 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 1.25rem; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 1rem; }
+    .card h2 { font-size: 1.05rem; margin-top: 0; }
+    ul { margin: 0.5rem 0 0; padding-left: 1rem; }
+    li { margin: 0.35rem 0; }
+    a { text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .hint { margin-top: 1rem; font-size: 0.9rem; color: #666; }
+    code { background: #f5f5f5; padding: 0.1rem 0.25rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>FastAPI - Strona nawigacyjna</h1>
+  <p class="lead">Szybki dostęp do dokumentacji i endpointów z ćwiczeń <strong>wprowadzenie</strong> oraz <strong>fastapi002</strong>.</p>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Dokumentacja API</h2>
+      <ul>
+        <li><a href="/docs">Swagger UI (<code>/docs</code>)</a></li>
+        <li><a href="/redoc">ReDoc (<code>/redoc</code>)</a></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Notatki (frontend + API)</h2>
+      <ul>
+        <li><a href="/notes">Aplikacja notatek (<code>/notes</code>)</a></li>
+        <li><a href="/api/notes/">Lista notatek JSON (<code>/api/notes/</code>)</a></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Wprowadzenie - kalkulator i TODO</h2>
+      <ul>
+        <li><a href="/calc/add?a=5&b=3">Kalkulator add (<code>/calc/add?a=5&b=3</code>)</a></li>
+        <li><a href="/calc/divide?a=10&b=2">Kalkulator divide (<code>/calc/divide?a=10&b=2</code>)</a></li>
+        <li><a href="/tasks/">TODO lista (<code>/tasks/</code>)</a></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Fastapi002 - blog API</h2>
+      <ul>
+        <li><a href="/auth/register"><code>/auth/register</code> (POST)</a></li>
+        <li><a href="/auth/token"><code>/auth/token</code> (POST)</a></li>
+        <li><a href="/posts/"><code>/posts/</code></a></li>
+        <li><a href="/tags/"><code>/tags/</code></a></li>
+        <li><a href="/users/me"><code>/users/me</code> (wymaga tokenu)</a></li>
+      </ul>
+    </section>
+  </div>
+
+  <p class="hint">
+    Wskazowka: endpointy oznaczone jako <code>POST</code> lub "wymaga tokenu" najlepiej testowac przez <code>/docs</code>.
+  </p>
+</body>
+</html>
