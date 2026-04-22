@@ -2,10 +2,11 @@ import time
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.templating import Jinja2Templates
 
 from database import engine, Base
-from models import comment, post, tag, task, user
-from routers import auth, calculator, comments, posts, tags, tasks, users
+from models import comment, note, post, tag, task, user
+from routers import auth, calculator, comments, notes, posts, tags, tasks, users
 from exceptions import register_exception_handlers
 
 Base.metadata.create_all(bind=engine)
@@ -13,8 +14,12 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="Blog API",
     version="1.2",
-    description="REST API z autoryzacją JWT i kontrolą dostępu",
+    description=(
+        "REST API z autoryzacją JWT i kontrolą dostępu.\n\n"
+        "[Powrót do strony nawigacyjnej](/)"
+    ),
 )
+templates = Jinja2Templates(directory="templates")
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,6 +40,14 @@ async def log_requests(request: Request, call_next):
     print(f"{request.method} {request.url.path} -> {response.status_code} ({duration}ms)")
     return response
 
+@app.get("/")
+def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/notes")
+def notes_page(request: Request):
+    return templates.TemplateResponse("notes.html", {"request": request})
+
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(posts.router)
@@ -42,3 +55,4 @@ app.include_router(comments.router)
 app.include_router(tags.router)
 app.include_router(tasks.router)
 app.include_router(calculator.router)
+app.include_router(notes.router)
