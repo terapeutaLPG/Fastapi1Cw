@@ -228,7 +228,7 @@
           <div class="item-top">
             <span class="item-title ${doneClass}">${task.title}</span>
             <div class="row">
-              <button type="button" data-action="toggle">Oznacz jako done</button>
+              <label><input type="checkbox" data-action="toggle" ${task.done ? "checked" : ""}> done</label>
               <button type="button" data-action="edit">Edytuj</button>
               <button type="button" data-action="delete">Usun</button>
             </div>
@@ -237,8 +237,10 @@
           <div class="meta">ID: ${task.id} | Utworzono: ${new Date(task.created_at).toLocaleString()} | done: ${task.done}</div>
         `;
 
-        const [toggleBtn, editBtn, deleteBtn] = li.querySelectorAll("button");
-        toggleBtn.addEventListener("click", () => toggleTask(task.id));
+        const toggleInput = li.querySelector('input[data-action="toggle"]');
+        const editBtn = li.querySelector('button[data-action="edit"]');
+        const deleteBtn = li.querySelector('button[data-action="delete"]');
+        toggleInput.addEventListener("change", () => toggleTask(task.id));
         editBtn.addEventListener("click", () => openEdit(task.id));
         deleteBtn.addEventListener("click", () => deleteTask(task.id));
 
