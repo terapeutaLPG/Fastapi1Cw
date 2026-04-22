@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TODO - aplikacja</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 1.5rem auto; max-width: 1100px; }
+    h1 { margin-bottom: 0.25rem; }
+    .topbar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .layout { display: grid; grid-template-columns: 320px 1fr; gap: 1rem; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 1rem; }
+    .card h2 { margin-top: 0; font-size: 1.05rem; }
+    label { display: block; margin: 0.4rem 0 0.2rem; }
+    input, textarea, select { width: 100%; box-sizing: border-box; padding: 0.55rem; border: 1px solid #ccc; border-radius: 6px; }
+    textarea { min-height: 84px; resize: vertical; }
+    .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.65rem; }
+    button { padding: 0.48rem 0.72rem; cursor: pointer; }
+    ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.7rem; }
+    li { border: 1px solid #e2e2e2; border-radius: 8px; padding: 0.75rem; }
+    .item-top { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .item-title { font-weight: bold; }
+    .done { text-decoration: line-through; color: #666; }
+    .meta { color: #666; font-size: 0.85rem; margin-top: 0.3rem; }
+    .desc { margin: 0.5rem 0; white-space: pre-wrap; }
+    #feedback { min-height: 1.2rem; margin-bottom: 0.6rem; }
+    #feedback.ok { color: #0b6b2f; }
+    #feedback.error { color: #b00020; }
+    #result-info { color: #444; margin-bottom: 0.6rem; }
+    #edit-panel { display: none; margin-top: 1rem; }
+    .pagination { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.8rem; }
+    @media (max-width: 840px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <h1>TODO - kompletne CRUD</h1>
+  <div class="topbar">
+    <a href="/">Powrot do nawigacji</a>
+    <a href="/docs">Swagger</a>
+    <button id="logout-btn" type="button">Wyloguj</button>
+  </div>
+
+  <p id="feedback"></p>
+
+  <div class="layout">
+    <section class="card">
+      <h2>Dodaj zadanie</h2>
+      <form id="create-form">
+        <label for="create-title">Tytul</label>
+        <input id="create-title" maxlength="200" required>
+
+        <label for="create-description">Opis</label>
+        <textarea id="create-description" maxlength="2000"></textarea>
+
+        <button type="submit">Dodaj</button>
+      </form>
+
+      <hr>
+
+      <h2>Wyszukiwanie i filtry</h2>
+      <label for="search-input">Szukaj po tytule/opisie</label>
+      <input id="search-input" placeholder="np. zakupy">
+
+      <label for="per-page">Wynikow na strone</label>
+      <select id="per-page">
+        <option value="5">5</option>
+        <option value="10" selected>10</option>
+        <option value="20">20</option>
+      </select>
+
+      <div class="row">
+        <button id="toggle-undone-btn" type="button">Pokaz tylko nieukonczone</button>
+        <button id="clear-filters-btn" type="button">Wyczysc filtry</button>
+      </div>
+
+      <section id="edit-panel" class="card">
+        <h2>Edycja zadania</h2>
+        <form id="edit-form">
+          <input id="edit-id" type="hidden">
+
+          <label for="edit-title">Tytul</label>
+          <input id="edit-title" maxlength="200" required>
+
+          <label for="edit-description">Opis</label>
+          <textarea id="edit-description" maxlength="2000"></textarea>
+
+          <label>
+            <input id="edit-done" type="checkbox">
+            Done
+          </label>
+
+          <div class="row">
+            <button type="submit">Zapisz</button>
+            <button id="cancel-edit-btn" type="button">Anuluj</button>
+          </div>
+        </form>
+      </section>
+    </section>
+
+    <section class="card">
+      <h2>Lista zadan</h2>
+      <p id="result-info">Znaleziono 0 wynikow</p>
+      <ul id="tasks-list"></ul>
+
+      <div class="pagination">
+        <button id="prev-btn" type="button">Poprzednia</button>
+        <span id="page-info">Strona 1 / 1</span>
+        <button id="next-btn" type="button">Nastepna</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const token = sessionStorage.getItem("access_token");
+    if (!token) {
+      window.location.href = "/todo/login";
+    }
+
+    const state = {
+      page: 1,
+      perPage: 10,
+      search: "",
+      doneFilter: null,
+      total: 0,
+      pages: 0,
+      items: [],
+    };
+
+    const els = {
+      feedback: document.getElementById("feedback"),
+      createForm: document.getElementById("create-form"),
+      createTitle: document.getElementById("create-title"),
+      createDescription: document.getElementById("create-description"),
+      searchInput: document.getElementById("search-input"),
+      perPage: document.getElementById("per-page"),
+      toggleUndoneBtn: document.getElementById("toggle-undone-btn"),
+      clearFiltersBtn: document.getElementById("clear-filters-btn"),
+      tasksList: document.getElementById("tasks-list"),
+      resultInfo: document.getElementById("result-info"),
+      pageInfo: document.getElementById("page-info"),
+      prevBtn: document.getElementById("prev-btn"),
+      nextBtn: document.getElementById("next-btn"),
+      editPanel: document.getElementById("edit-panel"),
+      editForm: document.getElementById("edit-form"),
+      editId: document.getElementById("edit-id"),
+      editTitle: document.getElementById("edit-title"),
+      editDescription: document.getElementById("edit-description"),
+      editDone: document.getElementById("edit-done"),
+      cancelEditBtn: document.getElementById("cancel-edit-btn"),
+      logoutBtn: document.getElementById("logout-btn"),
+    };
+
+    function showMessage(text, type = "ok", duration = 3000) {
+      els.feedback.textContent = text;
+      els.feedback.className = type ? type : "";
+      setTimeout(() => {
+        els.feedback.textContent = "";
+        els.feedback.className = "";
+      }, duration);
+    }
+
+    async function apiFetch(url, options = {}) {
+      const headers = {
+        Authorization: `Bearer ${sessionStorage.getItem("access_token") || ""}`,
+        ...(options.headers || {}),
+      };
+      if (options.body && !headers["Content-Type"]) {
+        headers["Content-Type"] = "application/json";
+      }
+
+      let res;
+      try {
+        res = await fetch(url, { ...options, headers });
+      } catch (_) {
+        throw new Error("Brak polaczenia z serwerem.");
+      }
+
+      if (res.status === 401) {
+        sessionStorage.removeItem("access_token");
+        sessionStorage.removeItem("refresh_token");
+        window.location.href = "/todo/login";
+        return null;
+      }
+
+      if (!res.ok) {
+        let detail = `HTTP ${res.status}`;
+        try {
+          const err = await res.json();
+          if (err && err.detail) {
+            detail = typeof err.detail === "string" ? err.detail : JSON.stringify(err.detail);
+          }
+        } catch (_) {}
+        throw new Error(detail);
+      }
+
+      if (res.status === 204) return null;
+      return res.json();
+    }
+
+    function buildTasksQuery() {
+      const params = new URLSearchParams();
+      params.set("page", String(state.page));
+      params.set("per_page", String(state.perPage));
+      if (state.search.trim()) params.set("search", state.search.trim());
+      if (state.doneFilter !== null) params.set("done", String(state.doneFilter));
+      return `/tasks/?${params.toString()}`;
+    }
+
+    function renderTasks() {
+      els.tasksList.innerHTML = "";
+      state.items.forEach((task) => {
+        const li = document.createElement("li");
+        const doneClass = task.done ? "done" : "";
+        li.innerHTML = `
+          <div class="item-top">
+            <span class="item-title ${doneClass}">${task.title}</span>
+            <div class="row">
+              <button type="button" data-action="toggle">Oznacz jako done</button>
+              <button type="button" data-action="edit">Edytuj</button>
+              <button type="button" data-action="delete">Usun</button>
+            </div>
+          </div>
+          <div class="desc">${task.description || ""}</div>
+          <div class="meta">ID: ${task.id} | Utworzono: ${new Date(task.created_at).toLocaleString()} | done: ${task.done}</div>
+        `;
+
+        const [toggleBtn, editBtn, deleteBtn] = li.querySelectorAll("button");
+        toggleBtn.addEventListener("click", () => toggleTask(task.id));
+        editBtn.addEventListener("click", () => openEdit(task.id));
+        deleteBtn.addEventListener("click", () => deleteTask(task.id));
+
+        els.tasksList.appendChild(li);
+      });
+
+      const pages = state.pages || 1;
+      els.resultInfo.textContent = `Znaleziono ${state.total} wynikow`;
+      els.pageInfo.textContent = `Strona ${state.page} / ${pages}`;
+      els.prevBtn.disabled = state.page <= 1;
+      els.nextBtn.disabled = state.page >= pages;
+      els.toggleUndoneBtn.textContent = state.doneFilter === false
+        ? "Pokaz wszystkie"
+        : "Pokaz tylko nieukonczone";
+    }
+
+    async function loadTasks() {
+      const data = await apiFetch(buildTasksQuery());
+      if (!data) return;
+      state.total = data.total;
+      state.pages = data.pages;
+      state.items = data.items;
+      renderTasks();
+    }
+
+    async function createTask(e) {
+      e.preventDefault();
+      const title = els.createTitle.value.trim();
+      const description = els.createDescription.value.trim();
+      if (!title) {
+        showMessage("Tytul jest wymagany.", "error");
+        return;
+      }
+
+      await apiFetch("/tasks/", {
+        method: "POST",
+        body: JSON.stringify({ title, description: description || null }),
+      });
+      els.createForm.reset();
+      showMessage("Dodano zadanie.", "ok");
+      state.page = 1;
+      await loadTasks();
+    }
+
+    async function toggleTask(taskId) {
+      await apiFetch(`/tasks/${taskId}/toggle`, { method: "PATCH" });
+      showMessage("Zmieniono status zadania.", "ok");
+      await loadTasks();
+    }
+
+    async function deleteTask(taskId) {
+      await apiFetch(`/tasks/${taskId}`, { method: "DELETE" });
+      showMessage("Usunieto zadanie.", "ok");
+      if (state.page > 1 && state.items.length === 1) {
+        state.page -= 1;
+      }
+      await loadTasks();
+    }
+
+    async function openEdit(taskId) {
+      const task = await apiFetch(`/tasks/${taskId}`);
+      if (!task) return;
+      els.editId.value = String(task.id);
+      els.editTitle.value = task.title;
+      els.editDescription.value = task.description || "";
+      els.editDone.checked = Boolean(task.done);
+      els.editPanel.style.display = "block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function saveEdit(e) {
+      e.preventDefault();
+      const id = Number(els.editId.value);
+      const payload = {
+        title: els.editTitle.value.trim(),
+        description: els.editDescription.value.trim() || null,
+        done: els.editDone.checked,
+      };
+
+      if (!payload.title) {
+        showMessage("Tytul jest wymagany.", "error");
+        return;
+      }
+
+      await apiFetch(`/tasks/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+      showMessage("Zapisano zmiany.", "ok");
+      els.editPanel.style.display = "none";
+      await loadTasks();
+    }
+
+    function clearFilters() {
+      state.search = "";
+      state.doneFilter = null;
+      state.page = 1;
+      state.perPage = 10;
+      els.searchInput.value = "";
+      els.perPage.value = "10";
+      loadTasks().catch((err) => showMessage(err.message, "error"));
+    }
+
+    els.createForm.addEventListener("submit", (e) => {
+      createTask(e).catch((err) => showMessage(err.message, "error"));
+    });
+
+    els.searchInput.addEventListener("input", () => {
+      state.search = els.searchInput.value;
+      state.page = 1;
+      loadTasks().catch((err) => showMessage(err.message, "error"));
+    });
+
+    els.perPage.addEventListener("change", () => {
+      state.perPage = Number(els.perPage.value);
+      state.page = 1;
+      loadTasks().catch((err) => showMessage(err.message, "error"));
+    });
+
+    els.toggleUndoneBtn.addEventListener("click", () => {
+      state.doneFilter = state.doneFilter === false ? null : false;
+      state.page = 1;
+      loadTasks().catch((err) => showMessage(err.message, "error"));
+    });
+
+    els.clearFiltersBtn.addEventListener("click", clearFilters);
+
+    els.prevBtn.addEventListener("click", () => {
+      if (state.page > 1) {
+        state.page -= 1;
+        loadTasks().catch((err) => showMessage(err.message, "error"));
+      }
+    });
+
+    els.nextBtn.addEventListener("click", () => {
+      const pages = state.pages || 1;
+      if (state.page < pages) {
+        state.page += 1;
+        loadTasks().catch((err) => showMessage(err.message, "error"));
+      }
+    });
+
+    els.editForm.addEventListener("submit", (e) => {
+      saveEdit(e).catch((err) => showMessage(err.message, "error"));
+    });
+
+    els.cancelEditBtn.addEventListener("click", () => {
+      els.editPanel.style.display = "none";
+    });
+
+    els.logoutBtn.addEventListener("click", () => {
+      sessionStorage.removeItem("access_token");
+      sessionStorage.removeItem("refresh_token");
+      window.location.href = "/todo/login";
+    });
+
+    loadTasks().catch((err) => showMessage(err.message, "error"));
+  </script>
+</body>
+</html>
